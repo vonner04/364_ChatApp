@@ -44,10 +44,10 @@ def main():
     receive_thread.start()
 
     # Login process
-    username = input("Username: ")
-    client_socket.send(username.encode("utf-8"))
+    username = input()
+    client_socket.send(username.strip().encode("utf-8"))
 
-    password = input("Password: ")
+    password = input()
     client_socket.send(password.encode("utf-8"))
 
     # Wait for server response (login success or failure)
@@ -55,9 +55,6 @@ def main():
     print(response)
 
     # If login is successful, enter the messaging loop
-    if "successful" in response.lower():
-        # Send messages to the server
-        send_messages(client_socket)
 
     # Wait for the receive thread to complete (in case the server disconnects first)
     receive_thread.join()
