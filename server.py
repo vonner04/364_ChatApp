@@ -41,7 +41,7 @@ def handle_client(conn, addr):
 
     while not authenticated:
         conn.send("Enter username:".encode("utf-8"))
-        username = conn.recv(1024).decode("utf-8")
+        username = conn.recv(1024).decode("utf-8").strip()
 
         conn.send("Enter password:".encode("utf-8"))
         password = conn.recv(1024).decode("utf-8")
@@ -80,7 +80,12 @@ def handle_client(conn, addr):
 def broadcast(message, conn):
     for client in connected_clients:
         if client != conn:
-            client.send(message)
+            try:
+                client.send(message)
+            except:
+                # If the send fails (e.g., client has disconnected), remove the client
+                client.close()
+                connected_clients.remove(client)
 
 
 if __name__ == "__main__":
