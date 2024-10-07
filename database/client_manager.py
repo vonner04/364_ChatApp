@@ -59,16 +59,16 @@ def login_user(username, password):
             stored_hashed_password = user[0]
             if check_password(password, stored_hashed_password):
                 conn.close()
-                return True, "Login successful"
+                return True, "SUCCESS: Login successful"
             else:
                 conn.close()
-                return False, "Incorrect password"
+                return False, "FAILED: Incorrect password"
         else:  # Register user if user does not exist
             conn.close()
             if register_user(username, password):
-                return True, "User not found, New user registered"
+                return True, "SUCCESS: User not found, New user registered"
             else:
-                return False, "Username already exists"
+                return False, "FAILED: Username already exists"
     finally:
         conn.close()
 

@@ -1,11 +1,14 @@
 import socket
 import threading
 from database.client_manager import create_user_table, login_user
-from broadcaster import Broadcaster
 
 PORT = 5555
 SERVER = socket.gethostbyname(socket.gethostname())
 EXIT_COMMAND = "!DISCONNECT"
+
+# List to keep track of connected clients and their usernames
+connected_clients = []
+usernames = []
 
 
 # Initialize the server
@@ -16,85 +19,68 @@ def start():
     server_socket.listen(5)
     print(f"Server is listening on {SERVER}")
 
-    # Initialize the broadcaster
-    broadcaster = Broadcaster()
-
     while True:
-        client_socket, address = server_socket.accept()
-        print(f"Connection from {address} has been established.")
-        client_handler = threading.Thread(
-            target=handle_client, args=(client_socket, broadcaster)
-        )
+        conn, addr = server_socket.accept()
+        print(f"Connection from {addr} has been established.")
+        client_handler = threading.Thread(target=handle_client, args=(conn, addr))
         client_handler.start()
         print(f"[SERVER] ACTIVE CONNECTIONS: {threading.active_count() - 1}")
 
 
 # Function to handle a client connection
-def handle_client(client_socket, broadcaster):
-    try:
-        if not login_process(client_socket, broadcaster):
-            return
+def handle_client(conn, addr):
 
-        # Notify others that a new client has joined
-        broadcaster.broadcast(
-            f"{broadcaster.client_usernames[client_socket]} has joined the chat",
-            client_socket,
-        )
+    # Limit the number of clients to 2
+    if threading.active_count() - 1 > 2:
+        conn.send("Server is full. Try again later.".encode("utf-8"))
+        conn.close()
+        return
 
-        # Handle requests from the client
-        handle_requests(client_socket, broadcaster)
+    authenticated = False
+    username = None
 
-    except ConnectionResetError:
-        print(
-            f"Client {broadcaster.client_usernames[client_socket]} disconnected unexpectedly"
-        )
-        broadcaster.broadcast(
-            broadcaster.broadcast(
-                f"{broadcaster.client_usernames[client_socket]} has left the chat",
-                client_socket,
-            )
-        )
-    finally:
-        broadcaster.remove_client(client_socket)
-        client_socket.close()
-        print(f"Connection with {client_socket} has been closed")
+    while not authenticated:
+        conn.send("Enter username:".encode("utf-8"))
+        username = conn.recv(1024).decode("utf-8")
 
+        conn.send("Enter password:".encode("utf-8"))
+        password = conn.recv(1024).decode("utf-8")
 
-def login_process(client_socket, broadcaster):
-
-    while True:
-        username = prompt(client_socket, "[SERVER] Enter a username: ")
-        password = prompt(client_socket, "[SERVER] Enter a password: ")
-
-        success, response = login_user(username, password)
-        client_socket.send(response.encode("utf-8"))
-
-        # If login is successful, store the client socket and username
+        success, message = login_user(username, password)
         if success:
-            broadcaster.add_client(client_socket, username)
-            return True
+            authenticated = True
+            conn.send(message.encode("utf-8"))
+        else:
+            conn.send(message.encode("utf-8"))
+
+    connected_clients.append(conn)
+    usernames.append(username)
+    broadcast(f"{username} has joined the chat!", conn)
+
+    # Main chat loop
+    connected = True
+    while connected:
+        try:
+            msg = conn.recv(1024).decode("utf-8")
+            if msg:
+                print(f"{username} says: {msg}")
+                broadcast(f"{username}: {msg}".encode("utf-8"), conn)
+        except:
+            connected = False
+
+    # If connection breaks, remove the client
+    conn.close()
+    connected_clients.remove(conn)
+    usernames.remove(username)
+    broadcast(f"{username} has left the chat.".encode("utf-8"), conn)
+    print(f"Connection from {addr} closed")
 
 
-def handle_requests(client_socket, broadcaster):
-
-    while True:
-        request = client_socket.recv(1024).decode("utf-8")
-
-        if request == EXIT_COMMAND:
-            broadcaster.broadcast(
-                f"{broadcaster.client_usernames[client_socket]} has left the chat",
-                client_socket,
-            )
-            break
-
-    broadcaster.remove_client(client_socket)
-
-    client_socket.close()
-
-
-def prompt(client_socket, message):
-    client_socket.send(message.encode("utf-8"))
-    return client_socket.recv(1024).decode("utf-8")
+# Broadcast message to all connected clients
+def broadcast(message, conn):
+    for client in connected_clients:
+        if client != conn:
+            client.send(message)
 
 
 if __name__ == "__main__":
