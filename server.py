@@ -53,9 +53,11 @@ def handle_client(conn, addr):
         else:
             conn.send(message.encode("utf-8"))
 
-    connected_clients.append(conn)
-    usernames.append(username)
-    broadcast(f"{username} has joined the chat!", conn)
+    # Add the client to connected_clients once authenticated
+    if conn not in connected_clients:
+        connected_clients.append(conn)
+        usernames.append(username)
+        broadcast(f"{username} has joined the chat!".encode("utf-8"), conn)
 
     # Main chat loop
     connected = True
@@ -68,24 +70,19 @@ def handle_client(conn, addr):
         except:
             connected = False
 
-    # If connection breaks, remove the client
-    conn.close()
-    connected_clients.remove(conn)
-    usernames.remove(username)
-    broadcast(f"{username} has left the chat.".encode("utf-8"), conn)
-    print(f"Connection from {addr} closed")
+    if conn in connected_clients:
+        conn.close()
+        connected_clients.remove(conn)
+        usernames.remove(username)
+        broadcast(f"{username} has left the chat.".encode("utf-8"), conn)
+        print(f"Connection from {addr} closed")
 
 
 # Broadcast message to all connected clients
 def broadcast(message, conn):
     for client in connected_clients:
         if client != conn:
-            try:
-                client.send(message)
-            except:
-                # If the send fails (e.g., client has disconnected), remove the client
-                client.close()
-                connected_clients.remove(client)
+            client.send(message)
 
 
 if __name__ == "__main__":
