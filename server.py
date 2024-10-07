@@ -4,7 +4,7 @@ from database.client_manager import create_user_table, login_user
 
 PORT = 5555
 SERVER = socket.gethostbyname(socket.gethostname())
-
+EXIT_COMMAND = "!DISCONNECT"
 
 # List of connected clients and their usernames
 connected_clients = []
@@ -51,8 +51,8 @@ def handle_client(client_socket):
 
 def login_process(client_socket):
     while True:
-        username = prompt(client_socket, "[SERVER] Enter username: ")
-        password = prompt(client_socket, "[SERVER] Enter password: ")
+        username = prompt(client_socket, "[SERVER] Enter a username: ")
+        password = prompt(client_socket, "[SERVER] Enter a password: ")
 
         success, response = login_user(username, password)
         client_socket.send(response.encode("utf-8"))
@@ -60,7 +60,7 @@ def login_process(client_socket):
         # If login is successful, store the client socket and username
         if success:
             client_usernames[client_socket] = username
-            break
+            return True
 
 
 def handle_requests(client_socket):
@@ -69,7 +69,7 @@ def handle_requests(client_socket):
     while True:
         request = client_socket.recv(1024).decode("utf-8")
 
-        if request == "exit":
+        if request == EXIT_COMMAND:
             broadcast(
                 f"{client_usernames[client_socket]} has left the chat", client_socket
             )
@@ -95,8 +95,10 @@ def broadcast(message, current_client):
         if client != current_client:
             try:
                 client.send(full_message.encode("utf-8"))
-            except:
+            except socket.error:
                 connected_clients.remove(client)
+                if client in client_usernames:
+                    del client_usernames[client]
 
 
 def cleanup(client_socket):
