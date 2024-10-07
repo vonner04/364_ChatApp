@@ -21,6 +21,10 @@ def create_user_table():
 
 # Registers user if username does not exist
 def register_user(username, password):
+
+    if not username or not password:
+        return "Username or password cannot be empty"
+
     conn = sqlite3.connect("chatapp.db")
     cur = conn.cursor()
 
@@ -39,28 +43,34 @@ def register_user(username, password):
 
 # Logins user if user exists, else registers user
 def login_user(username, password):
-    conn = sqlite3.connect("chatapp.db")
-    cur = conn.cursor()
+    if not username or not password:
+        return "Username or password cannot be empty"
 
-    # Check if user exists
-    cur.execute("""SELECT password FROM users WHERE username = ?""", (username,))
-    user = cur.fetchone()
+    try:
+        conn = sqlite3.connect("chatapp.db")
+        cur = conn.cursor()
 
-    # Check password if user exists
-    if user:
-        stored_hashed_password = user[0]
-        if check_password(password, stored_hashed_password):
+        # Check if user exists
+        cur.execute("""SELECT password FROM users WHERE username = ?""", (username,))
+        user = cur.fetchone()
+
+        # Check password if user exists
+        if user:
+            stored_hashed_password = user[0]
+            if check_password(password, stored_hashed_password):
+                conn.close()
+                return "Login successful"
+            else:
+                conn.close()
+                return "Incorrect password"
+        else:  # Register user if user does not exist
             conn.close()
-            return "Login successful"
-        else:
-            conn.close()
-            return "Incorrect password"
-    else:  # Register user if user does not exist
+            if register_user(username, password):
+                return "User not found, New user registered"
+            else:
+                return "Username already exists"
+    finally:
         conn.close()
-        if register_user(username, password):
-            return "User not found, New user registered"
-        else:
-            return "Username already exists"
 
 
 # Password hashing and verification functions via bcrypt library.
