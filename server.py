@@ -29,11 +29,30 @@ def start():
 def handle_client(conn, addr):
 
     # Limit the number of clients to 2
+    if not accept_connection(conn):
+        return
+
+    username = authenticate_user(conn)
+
+    # Add the client to connected_clients once authenticated
+    broadcaster.add_client(conn)
+    broadcaster.broadcast(f"{username} has joined the chat!", conn)
+
+    try:
+        handle_chat(conn, username)
+    finally:
+        handle_disconnect(conn, username, addr)
+
+
+def accept_connection(conn):
     if threading.active_count() - 1 > 2:
         conn.send("Server is full. Try again later.".encode("utf-8"))
         conn.close()
-        return
+        return False
+    return True
 
+
+def authenticate_user(conn):
     authenticated = False
     username = None
 
@@ -45,19 +64,17 @@ def handle_client(conn, addr):
         password = conn.recv(1024).decode("utf-8")
 
         success, message = login_user(username, password)
+        conn.send(message.encode("utf-8"))
         if success:
             authenticated = True
-            conn.send(message.encode("utf-8"))
         else:
-            conn.send(message.encode("utf-8"))
+            return None
+    return username
 
-    # Add the client to connected_clients once authenticated
-    broadcaster.add_client(conn)
-    broadcaster.broadcast(f"{username} has joined the chat!", conn)
 
+def handle_chat(conn, username):
     # Main chat loop
-    connected = True
-    while connected:
+    while True:
         try:
             msg = conn.recv(1024).decode("utf-8")
             if msg:
@@ -65,10 +82,13 @@ def handle_client(conn, addr):
                 broadcaster.broadcast(f"{username}: {msg}", conn)
 
                 if msg == EXIT_COMMAND:
-                    connected = False
-        except:
-            connected = False
+                    break
+        except ConnectionResetError:
+            print(f"Connection with {username} lost.")
+            break
 
+
+def handle_disconnect(conn, username, addr):
     broadcaster.remove_client(conn)
     conn.close()
     broadcaster.broadcast(f"{username} has left the chat.", conn)

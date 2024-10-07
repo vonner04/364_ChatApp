@@ -3,6 +3,7 @@ import threading
 
 SERVER_IP = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 5555
+EXIT_COMMAND = "!DISCONNECT"
 
 
 # Function to receive messages from the server
@@ -12,9 +13,11 @@ def receive_messages(client_socket):
             # Receive and print messages from the server
             message = client_socket.recv(1024).decode("utf-8")
             print(message)
-        except:
-            print("Connection lost...")
-            client_socket.close()
+        except ConnectionAbortedError:
+            print("Connection to the server has been closed.")
+            break
+        except OSError as e:
+            print("An OS error occurred:", e)
             break
 
 
@@ -24,6 +27,9 @@ def send_messages(client_socket):
         # Send input from the user to the server
         message = input("")
         client_socket.send(message.encode("utf-8"))
+        if message == EXIT_COMMAND:
+            client_socket.close()
+            break
 
 
 def start_client():
