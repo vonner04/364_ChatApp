@@ -3,7 +3,6 @@ import threading
 
 SERVER_IP = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 5555
-EXIT_COMMAND = "!DISCONNECT"
 
 
 # Function to receive messages from the server

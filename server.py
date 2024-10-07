@@ -1,14 +1,12 @@
 import socket
 import threading
 from database.client_manager import create_user_table, login_user
+from broadcaster import Broadcaster
 
 PORT = 5555
 SERVER = socket.gethostbyname(socket.gethostname())
 EXIT_COMMAND = "!DISCONNECT"
-
-# List to keep track of connected clients and their usernames
-connected_clients = []
-usernames = []
+broadcaster = Broadcaster()
 
 
 # Initialize the server
@@ -54,10 +52,8 @@ def handle_client(conn, addr):
             conn.send(message.encode("utf-8"))
 
     # Add the client to connected_clients once authenticated
-    if conn not in connected_clients:
-        connected_clients.append(conn)
-        usernames.append(username)
-        broadcast(f"{username} has joined the chat!".encode("utf-8"), conn)
+    broadcaster.add_client(conn)
+    broadcaster.broadcast(f"{username} has joined the chat!", conn)
 
     # Main chat loop
     connected = True
@@ -66,23 +62,17 @@ def handle_client(conn, addr):
             msg = conn.recv(1024).decode("utf-8")
             if msg:
                 print(f"{username} says: {msg}")
-                broadcast(f"{username}: {msg}".encode("utf-8"), conn)
+                broadcaster.broadcast(f"{username}: {msg}", conn)
+
+                if msg == EXIT_COMMAND:
+                    connected = False
         except:
             connected = False
 
-    if conn in connected_clients:
-        conn.close()
-        connected_clients.remove(conn)
-        usernames.remove(username)
-        broadcast(f"{username} has left the chat.".encode("utf-8"), conn)
-        print(f"Connection from {addr} closed")
-
-
-# Broadcast message to all connected clients
-def broadcast(message, conn):
-    for client in connected_clients:
-        if client != conn:
-            client.send(message)
+    broadcaster.remove_client(conn)
+    conn.close()
+    broadcaster.broadcast(f"{username} has left the chat.", conn)
+    print(f"Connection from {addr} closed")
 
 
 if __name__ == "__main__":
