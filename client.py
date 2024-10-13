@@ -2,6 +2,7 @@ import socket
 import threading
 import sys 
 
+
 SERVER_IP = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 5555
 EXIT_COMMAND = "!DISCONNECT"
@@ -16,9 +17,11 @@ def receive_messages(client_socket):
             sys.stdout.write(f"{message}\n")
             sys.stdout.flush()
             
-        except:
-            print("Connection lost...")
-            client_socket.close()
+        except ConnectionAbortedError:
+            print("Connection to the server has been closed.")
+            break
+        except OSError as e:
+            print("An OS error occurred:", e)
             break
 
 
