@@ -1,11 +1,13 @@
 import socket
 import threading
-import sys 
+import sys
+import ssl
 
 
-SERVER_IP = socket.gethostbyname(socket.gethostname())
+SERVER_IP = "localhost"
 SERVER_PORT = 5555
 EXIT_COMMAND = "!DISCONNECT"
+CERT_FILE = "cert.pem"
 
 
 # Function to receive messages from the server
@@ -16,7 +18,7 @@ def receive_messages(client_socket):
             message = client_socket.recv(1024).decode("utf-8")
             sys.stdout.write(f"{message}\n")
             sys.stdout.flush()
-            
+
         except ConnectionAbortedError:
             print("Connection to the server has been closed.")
             break
@@ -37,8 +39,14 @@ def send_messages(client_socket):
 
 
 def start_client():
+    # Wrap the socket with SSL
+    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+    context.load_verify_locations(CERT_FILE)
+
     # Establish connection to the server
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket = context.wrap_socket(
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM), server_hostname=SERVER_IP
+    )
     client_socket.connect((SERVER_IP, SERVER_PORT))
 
     # Start a thread to receive messages from the server

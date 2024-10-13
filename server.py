@@ -1,24 +1,35 @@
 import socket
 import threading
+import ssl
 from database.client_manager import create_user_table, login_user
 from broadcaster import Broadcaster
 
 PORT = 5555
-SERVER = socket.gethostbyname(socket.gethostname())
+SERVER = "localhost"
 EXIT_COMMAND = "!DISCONNECT"
+CERT_FILE = "cert.pem"
+KEY_FILE = "key.pem"
 broadcaster = Broadcaster()
 
 
 # Initialize the server
 def start():
     create_user_table()
+
+    # Set up SSL context
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(certfile=CERT_FILE, keyfile=KEY_FILE)
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((SERVER, PORT))
     server_socket.listen(5)
+
+    server_socket_ssl = context.wrap_socket(server_socket, server_side=True)
+
     print(f"Server is listening on {SERVER}")
 
     while True:
-        conn, addr = server_socket.accept()
+        conn, addr = server_socket_ssl.accept()
         print(f"Connection from {addr} has been established.")
         client_handler = threading.Thread(target=handle_client, args=(conn, addr))
         client_handler.start()
