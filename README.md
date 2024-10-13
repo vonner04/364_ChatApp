@@ -21,3 +21,15 @@
 4. In python client.py terminal you will receive prompts for username and password.
 
 5. Enter a desired user-name and password (case-sensitive)
+
+**NOTE:** if you run into an error regard cert.pem and key.pem.
+
+- delete cert.pem and key.pem
+
+- regenerate new pem files by running the openssl config in terminal.
+
+```bash
+openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -config openssl.cnf -nodes
+```
+
+run this following command to regenerate cert.pem and key.pem then do steps 3-5 again.
