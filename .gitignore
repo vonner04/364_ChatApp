@@ -1,3 +1,4 @@
 # User Generated Files
 chatapp.db
 __pycache__/
+*.pcapng
