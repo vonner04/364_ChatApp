@@ -1,5 +1,7 @@
 import socket
 import threading
+import sys 
+
 
 SERVER_IP = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 5555
@@ -12,7 +14,9 @@ def receive_messages(client_socket):
         try:
             # Receive and print messages from the server
             message = client_socket.recv(1024).decode("utf-8")
-            print(message)
+            sys.stdout.write(f"{message}\n")
+            sys.stdout.flush()
+            
         except ConnectionAbortedError:
             print("Connection to the server has been closed.")
             break
