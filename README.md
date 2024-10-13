@@ -8,7 +8,11 @@
 
 2. Open the 364_ChatApp folder in a terminal.
 
-3. Paste the following lines to start the server and client.
+3. For each line of command paste into a different terminal
+
    ```bash
-   TO BE IMPLEMENTED
+   python server.py
+   python client.py
    ```
+
+4. Enter a username and password (case-sensitive) then start chatting!
