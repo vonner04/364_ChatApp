@@ -4,6 +4,7 @@ import sys
 
 SERVER_IP = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 5555
+EXIT_COMMAND = "!DISCONNECT"
 
 
 # Function to receive messages from the server
@@ -27,6 +28,9 @@ def send_messages(client_socket):
         # Send input from the user to the server
         message = input("")
         client_socket.send(message.encode("utf-8"))
+        if message == EXIT_COMMAND:
+            client_socket.close()
+            break
 
 
 def start_client():
