@@ -8,7 +8,7 @@
 
 2. Open the 364_ChatApp folder in a terminal.
 
-3. Paste the following lines in different terminals.
+3. Paste the following lines in different terminals. For linux replace python with python3.
 
    ```bash
    python server.py
